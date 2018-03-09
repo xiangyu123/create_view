@@ -10,6 +10,13 @@ import (
 	"github.com/xiangyu123/create_view/database"
 )
 
+type view_infos struct {
+	enview    string
+	secview   string
+	entbname  string
+	sectbname string
+}
+
 func empty(s string) bool {
 	return len(strings.TrimSpace(s)) == 0
 }
@@ -22,31 +29,72 @@ func isNotEmpty(a interface{}) bool {
 	return !(v.Interface() == reflect.Zero(v.Type()).Interface())
 }
 
-func create_view(c *gin.Context, view_name string, tablename string) {
-	sql_statements := fmt.Sprintf("create view %s as select * from %s", view_name, tablename)
-	log.Println(sql_statements)
-	success, err := database.SqlDB.Exec(sql_statements)
+func del_real_viewname(viewname string) {
+	sql_statement := fmt.Sprintf("drop view %s", viewname)
+	log.Println(sql_statement)
+	database.SqlDB.Exec(sql_statement)
+}
+
+func del_view(c *gin.Context, viewsets view_infos) {
+	del_real_viewname(viewsets.enview)
+	del_real_viewname(viewsets.secview)
+}
+
+func create_view(c *gin.Context, viewnames view_infos) {
+	tx, err := database.SqlDB.Begin()
 	if err != nil {
-		status_code := 400
-		content := gin.H{"msg": fmt.Sprintf("faild create view name %s for %s", view_name, tablename), "code": status_code}
-		c.JSON(200, content)
+		log.Fatal("db translation begin faild")
+	}
+	var message string
+	var err_code int16
+	var content gin.H
+	var counter int
+
+	sql1 := fmt.Sprintf("create view %s as select * from %s", viewnames.enview, viewnames.entbname)
+	sql2 := fmt.Sprintf("create view %s as select * from %s", viewnames.secview, viewnames.sectbname)
+	log.Println(sql1)
+	log.Println(sql2)
+	if _, err := tx.Exec(sql1); err != nil {
+		message = fmt.Sprintf("faild create view name %s for %s", viewnames.enview, viewnames.entbname)
+		err_code = 203
+		counter++
+		log.Println(message)
+	}
+	if _, err := tx.Exec(sql2); err != nil {
+		message = fmt.Sprintf("faild create view name %s for %s", viewnames.secview, viewnames.sectbname)
+		err_code = 204
+		counter++
+		log.Println(message)
 	}
 
-	if isNotEmpty(success) {
-		status_code := 200
-		content := gin.H{"msg": fmt.Sprintf("success create view name %s for %s", view_name, tablename), "code": status_code}
+	if err_code == 203 || err_code == 204 {
+		tx.Rollback()
+		if counter == 2 {
+			message = fmt.Sprintf("faild create both views named %s and %s", viewnames.enview, viewnames.secview)
+		}
+		content = gin.H{"msg": message, "code": 400}
+	} else if err := tx.Commit(); err != nil {
+		status_code := 400
+		content = gin.H{"msg": "faild create all view", "code": status_code}
 		c.JSON(200, content)
+		tx.Rollback()
+	} else {
+		status_code := 200
+		content = gin.H{"msg": "success create view", "code": status_code}
 	}
+	c.JSON(200, content)
 }
 
 func UpdateView(c *gin.Context) {
 	encodeTableName := c.Query("entb")
-	if !empty(encodeTableName) {
-		create_view(c, "enview", encodeTableName)
-	}
-
 	secretTableName := c.Query("sectb")
-	if !empty(secretTableName) {
-		create_view(c, "secview", secretTableName)
+	viewinfos := view_infos{"enview", "secview", encodeTableName, secretTableName}
+	if !empty(encodeTableName) && !empty(secretTableName) {
+		del_view(c, viewinfos)
+		create_view(c, viewinfos)
+	} else {
+		status_code := 400
+		content := gin.H{"msg": "miss a field", "code": status_code}
+		c.JSON(200, content)
 	}
 }
