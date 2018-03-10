@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,15 @@ type view_infos struct {
 	secview   string
 	entbname  string
 	sectbname string
+}
+
+func prepare() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+}
+
+func init() {
+	prepare()
 }
 
 func empty(s string) bool {
