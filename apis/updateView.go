@@ -98,7 +98,7 @@ func create_view(c *gin.Context, viewnames view_infos) {
 func UpdateView(c *gin.Context) {
 	encodeTableName := c.Query("entb")
 	secretTableName := c.Query("sectb")
-	viewinfos := view_infos{"enview", "secview", encodeTableName, secretTableName}
+	viewinfos := view_infos{"tags_relation_encrypt_view", "tags_company_encrypt_chain_view", encodeTableName, secretTableName}
 	if !empty(encodeTableName) && !empty(secretTableName) {
 		del_view(c, viewinfos)
 		create_view(c, viewinfos)

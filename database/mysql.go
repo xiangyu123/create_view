@@ -12,7 +12,7 @@ var SqlDB *sql.DB
 func init() {
 	var err error
 	// SqlDB, err = sql.Open("mysql", "root:InnoTree20%217%40nx6l8@tcp(172.31.215.34:3306)/zzz?charset=utf-8")
-	SqlDB, err = sql.Open("mysql", "admin_m:InnoTree20!7@nx6l8@tcp(172.31.215.34:3306)/zzz")
+	SqlDB, err = sql.Open("mysql", "admin_m:InnoTree20!7@nx6l8@tcp(172.31.215.34:3306)/innotree_data_online")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
