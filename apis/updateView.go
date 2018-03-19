@@ -14,8 +14,10 @@ import (
 type view_infos struct {
 	enview    string
 	secview   string
+	tncview   string
 	entbname  string
 	sectbname string
+	tnctbname string
 }
 
 func prepare() {
@@ -62,8 +64,10 @@ func create_view(c *gin.Context, viewnames view_infos) {
 
 	sql1 := fmt.Sprintf("create view %s as select * from %s", viewnames.enview, viewnames.entbname)
 	sql2 := fmt.Sprintf("create view %s as select * from %s", viewnames.secview, viewnames.sectbname)
+	sql3 := fmt.Sprintf("create view %s as select * from %s", viewnames.tncview, viewnames.tnctbname)
 	log.Println(sql1)
 	log.Println(sql2)
+	log.Println(sql3)
 	if _, err := tx.Exec(sql1); err != nil {
 		message = fmt.Sprintf("faild create view name %s for %s", viewnames.enview, viewnames.entbname)
 		err_code = 203
@@ -76,11 +80,17 @@ func create_view(c *gin.Context, viewnames view_infos) {
 		counter++
 		log.Println(message)
 	}
+	if _, err := tx.Exec(sql3); err != nil {
+		message = fmt.Sprintf("faild create view name %s for %s", viewnames.tncview, viewnames.tnctbname)
+		err_code = 205
+		counter++
+		log.Println(message)
+	}
 
-	if err_code == 203 || err_code == 204 {
+	if err_code == 203 || err_code == 204 || err_code == 205 {
 		tx.Rollback()
-		if counter == 2 {
-			message = fmt.Sprintf("faild create both views named %s and %s", viewnames.enview, viewnames.secview)
+		if counter == 3 {
+			message = fmt.Sprintf("faild create both views named %s, %s and %s", viewnames.enview, viewnames.secview, viewnames.tncview)
 		}
 		content = gin.H{"msg": message, "code": 400}
 	} else if err := tx.Commit(); err != nil {
@@ -98,8 +108,9 @@ func create_view(c *gin.Context, viewnames view_infos) {
 func UpdateView(c *gin.Context) {
 	encodeTableName := c.Query("entb")
 	secretTableName := c.Query("sectb")
-	viewinfos := view_infos{"tags_relation_encrypt_view", "tags_company_encrypt_chain_view", encodeTableName, secretTableName}
-	if !empty(encodeTableName) && !empty(secretTableName) {
+	tncTableName := c.Query("tnctb")
+	viewinfos := view_infos{"tags_relation_encrypt_view", "tags_company_encrypt_chain_view", "tags_encrypt_classify_view", encodeTableName, secretTableName, tncTableName}
+	if !empty(encodeTableName) && !empty(secretTableName) && !empty(tncTableName) {
 		del_view(c, viewinfos)
 		create_view(c, viewinfos)
 	} else {
