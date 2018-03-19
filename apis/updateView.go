@@ -50,6 +50,7 @@ func del_real_viewname(viewname string) {
 func del_view(c *gin.Context, viewsets view_infos) {
 	del_real_viewname(viewsets.enview)
 	del_real_viewname(viewsets.secview)
+	del_real_viewname(viewsets.tncview)
 }
 
 func create_view(c *gin.Context, viewnames view_infos) {
